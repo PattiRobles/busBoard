@@ -23,8 +23,8 @@ async function nextBuses() {
     }
     else {
         console.log(`Your closest bus stops are:
-        ${busStopsInRadius[0].commonName}- stop letter ${busStopsInRadius[0].stopLetter}- which is ${Math.trunc(busStopsInRadius[0].distance)}m away
-        ${busStopsInRadius[1].commonName}- stop letter ${busStopsInRadius[1].stopLetter}- which is ${Math.trunc(busStopsInRadius[1].distance)}m away`)
+        ${busStopsInRadius[0].commonName}- stop letter ${busStopsInRadius[0].stopLetter === undefined ? '(not available)' : busStopsInRadius[0].stopLetter}- which is ${Math.trunc(busStopsInRadius[0].distance)}m away
+        ${busStopsInRadius[1].commonName}- stop letter ${busStopsInRadius[1].stopLetter === undefined ? '(not available)' : busStopsInRadius[1].stopLetter}- which is ${Math.trunc(busStopsInRadius[1].distance)}m away`)
     }
 
 
@@ -36,7 +36,7 @@ async function nextBuses() {
             .map(bus => [bus.lineId, bus.towards, Math.round(bus.timeToStation / 60)]);
 
         const busesToDisplay = busInfo.length <= 4 ? busInfo.length : 4;
-        console.log(`The next buses arriving to ${stop.commonName}:`);
+        console.log(`The next buses arriving to ${stop.commonName} (${stop.stopLetter})`);
         if (busesToDisplay == 0 || busesToDisplay == undefined) {
             console.log("There are no buses arriving right now.")
         } else {
@@ -56,8 +56,12 @@ async function nextBuses() {
                     default:
                         ordinalSuffix = 'th'
                 }
-                console.log(`The ${i + 1}${ordinalSuffix} bus will be the ${busInfo[i][0]} towards ${busInfo[i][1]} which will arrive in ${busInfo[i][2]} minutes`)
-            };
+                if (busInfo[i][2] < 2) {
+                    console.log(`The ${i + 1}${ordinalSuffix} bus is the ${busInfo[i][0]} towards ${busInfo[i][1]} and is now due.`)
+                } else {
+                    console.log(`The ${i + 1}${ordinalSuffix} bus is the ${busInfo[i][0]} towards ${busInfo[i][1]} and is arriving in ${busInfo[i][2]} minutes.`)
+                }
+            }
         }
     }
 

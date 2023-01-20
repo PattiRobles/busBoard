@@ -1,3 +1,6 @@
+//TODO
+//Use Postcode API to validate? 
+
 import readline from 'readline-sync';
 
 export async function postcodeToCoords() {
