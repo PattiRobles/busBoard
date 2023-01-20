@@ -1,56 +1,65 @@
+//TODOS
+//1.only display closest 2 stops bus arrivals ✔
+//2. will need to slice busstopsinradius, line 13 ✔
+//3. pair each bus stop with the relevant bus info - at the moment showing in succession
+//4. line 15 should be renamed to closest2stops
+//5.implement a radius user input funcionality
+//6.display 0 min as due
+//7. try to refactor the code
+//8. deal with API not sending info back
+
 import { postcodeToCoords } from './postcodeFinder.js';
-//note readline below needs to be installed with npm on the command line before importing
-import readline from 'readline-sync';
 
 async function nextBuses() {
 
     const coords = await postcodeToCoords();
 
-    const response = await fetch(`https://api.tfl.gov.uk/StopPoint/?lat=${coords[0]}&lon=${coords[1]}&stopTypes=NaptanPublicBusCoachTram`);
-    const busBoard = await response.json();
-    const stoppingPoints = busBoard.stopPoints.sort((stopA, stopB) => stopA.distance - stopB.distance);
-    const closestStop = stoppingPoints[0];
-
-    //const secondClosestStop = stoppingPoints[1];
-
-    const busesServingStopResponse = await fetch(`https://api.tfl.gov.uk/StopPoint/${closestStop.naptanId}/Arrivals`)
-    const busesServingStopJSON = await busesServingStopResponse.json();
-
-    //sort() must come before map() here as once map has outputted an array, the bus.timeToStation object key doesn't exist anymroe
-    const busInfo = busesServingStopJSON
-        .sort((busA, busB) => busA.timeToStation - busB.timeToStation)
-        .map(bus => [bus.lineId, bus.towards, Math.round(bus.timeToStation / 60)]);
-
-    //determines how many buses to show, max 5; 
-    const busesToDisplay = busInfo.length <= 5 ? busInfo.length : 5;
-    console.log(`Your closest bus stop is ${closestStop.commonName}, stop letter ${closestStop.stopLetter}, which is ${Math.trunc(closestStop.distance)}m away.\nThe next buses are:`);
-
-    if (busesToDisplay == 0 || busesToDisplay == undefined) {
-        console.log("It seems there are no buses arriving right now;")
-    } else {
-        for (let i = 0; i < busesToDisplay; i++) {
-            //setting the suffixes for counting, '1st', '2nd' etc
-            let ordinalSuffix = 'th';
-            switch (i) {
-                case 0:
-                    ordinalSuffix = 'st';
-                    break;
-                case 1:
-                    ordinalSuffix = 'nd';
-                    break;
-                case 2:
-                    ordinalSuffix = 'rd';
-                    break;
-                default:
-                    ordinalSuffix = 'th'
-            }
-            //1st bus is at the 0th index, hence the +1 below
-            console.log(`The ${i + 1}${ordinalSuffix} bus will be the ${busInfo[i][0]} towards ${busInfo[i][1]} which will arrive in ${busInfo[i][2]} minutes`)
-        };
+    const busStopsInRadiusResponse = await fetch(`https://api.tfl.gov.uk/StopPoint/?lat=${coords[0]}&lon=${coords[1]}&stopTypes=NaptanPublicBusCoachTram&radius=250`);
+    const busStopsInRadiusJSON = await busStopsInRadiusResponse.json();
+    const busStopsInRadius = busStopsInRadiusJSON.stopPoints.sort((stopA, stopB) => stopA.distance - stopB.distance).slice(0, 2);
+    if (!busStopsInRadius.length) {
+        console.log('Sorry, there are no bus stops nearby');
+        process.exit();
     }
+    else {
+        console.log(`Your closest bus stops are:
+        ${busStopsInRadius[0].commonName}- stop letter ${busStopsInRadius[0].stopLetter}- which is ${Math.trunc(busStopsInRadius[0].distance)}m away
+        ${busStopsInRadius[1].commonName}- stop letter ${busStopsInRadius[1].stopLetter}- which is ${Math.trunc(busStopsInRadius[1].distance)}m away`)
+    }
+
+
+    for (let stop of busStopsInRadius) {
+        const busesServingStopResponse = await fetch(`https://api.tfl.gov.uk/StopPoint/${stop.naptanId}/Arrivals`)
+        const busesServingStopJSON = await busesServingStopResponse.json();
+        const busInfo = busesServingStopJSON
+            .sort((busA, busB) => busA.timeToStation - busB.timeToStation)
+            .map(bus => [bus.lineId, bus.towards, Math.round(bus.timeToStation / 60)]);
+
+        const busesToDisplay = busInfo.length <= 4 ? busInfo.length : 4;
+        console.log(`The next buses arriving to ${stop.commonName}:`);
+        if (busesToDisplay == 0 || busesToDisplay == undefined) {
+            console.log("There are no buses arriving right now.")
+        } else {
+            for (let i = 0; i < busesToDisplay; i++) {
+                //setting the suffixes for counting, '1st', '2nd' etc
+                let ordinalSuffix = 'th';
+                switch (i) {
+                    case 0:
+                        ordinalSuffix = 'st';
+                        break;
+                    case 1:
+                        ordinalSuffix = 'nd';
+                        break;
+                    case 2:
+                        ordinalSuffix = 'rd';
+                        break;
+                    default:
+                        ordinalSuffix = 'th'
+                }
+                console.log(`The ${i + 1}${ordinalSuffix} bus will be the ${busInfo[i][0]} towards ${busInfo[i][1]} which will arrive in ${busInfo[i][2]} minutes`)
+            };
+        }
+    }
+
 }
-
-nextBuses();
-
-
-
+nextBuses()

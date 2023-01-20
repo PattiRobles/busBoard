@@ -8,4 +8,4 @@ Only works in the Greater London area.
 
 ## To start
 
-To start, first run npm install. Then run npm start to get the postcode prompt
+To start, first run `npm install`. Then run `npm start` to get the postcode prompt.
